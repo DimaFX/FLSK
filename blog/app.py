@@ -1,28 +1,46 @@
-from flask import Flask, render_template, url_for
-from blog.user import views
-from blog.report import views
+from os import getenv, path
+
+from flask import Flask
+from json import load
+
+from .extensions import db, login_manager
+from .article.views import article
+from .models import User
+from .user.views import user
+from .index.views import index
+from .report.views import report
+from .auth.views import auth
+
+CONFIG_PATH = getenv("CONFIG_PATH", path.join("..\dev_config.json"))
+
+VIEWS = [
+    index,
+    user,
+    article,
+    report,
+    auth
+]
 
 
-app = Flask(__name__)
-
-
-@app.route('/')
-@app.route('/home')
-def index():
-    return render_template('index.html')
-
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-""" def create_app() -> Flask:
+def create_app() -> Flask:
     app = Flask(__name__)
+    app.config.from_file(CONFIG_PATH, load)
+    register_extensions(app)
     register_blueprints(app)
     return app
 
 
+def register_extensions(app):
+    db.init_app(app)
+
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
 
 def register_blueprints(app: Flask):
-    app.register_blueprint(views.user)
-    app.register_blueprint(views.report) """
+    for view in VIEWS:
+        app.register_blueprint(view)
